@@ -28,10 +28,6 @@
 <script src="js/KeyboardState.js"></script>
 
 <script>
-<<<<<<< HEAD
-
-=======
->>>>>>> gh-pages
 var camera, scene, renderer, sun, earth, EarthOrbit, EarthRotate, MoonOrbit, MoonRotate,
     clock, control, sign=0, keyboard = new KeyboardState();
 var count=0,count1, temp, turn=1, turn1=1, sup=1;
@@ -51,15 +47,14 @@ function init() {
     cameraBack = new THREE.OrthographicCamera(-10, 10, 10, -10, 1, 100);
     cameraBack.position.z = 5;
     cameraBack.lookAt(new THREE.Vector3(0, 0, 0));
-<<<<<<< HEAD
 
     THREE.ImageUtils.crossOrigin = '';
     var texture = THREE.ImageUtils.loadTexture('images/space.jpg');
 
-=======
+
     THREE.ImageUtils.crossOrigin = '';
     var texture = THREE.ImageUtils.loadTexture('images/space.jpg');
->>>>>>> gh-pages
+
     var back = new THREE.Mesh(new THREE.PlaneGeometry(20, 20),
     new THREE.MeshBasicMaterial({
         map: texture,
@@ -72,10 +67,7 @@ function init() {
     
     ////////////////////////////////////////////////////////
     scene = new THREE.Scene();
-<<<<<<< HEAD
 
-=======
->>>>>>> gh-pages
     camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
     camera.position.set(0,200,300);
     scene.add(camera);
@@ -85,11 +77,8 @@ function init() {
 	
     sun = new THREE.Mesh(new THREE.SphereGeometry(40,32,32),
     new THREE.MeshBasicMaterial({
-<<<<<<< HEAD
-        map : THREE.ImageUtils.loadTexture('images/sun1.jpg')
-=======
         map : THREE.ImageUtils.loadTexture('images/sun.jpg')
->>>>>>> gh-pages
+
     }));
     
     
@@ -106,7 +95,7 @@ function init() {
     earth.add(moon);
     sun.add(earth);
     scene.add(sun);
-<<<<<<< HEAD
+
 
     var gridXZ = new THREE.GridHelper(100, 10);
     gridXZ.setColors(new THREE.Color(0xff0000), new THREE.Color(0xffffff));
@@ -116,40 +105,32 @@ function init() {
     light.position.set(0, 0, 0);
     scene.add(light);
 
-=======
+
     var gridXZ = new THREE.GridHelper(100, 10);
     gridXZ.setColors(new THREE.Color(0xff0000), new THREE.Color(0xffffff));
     //scene.add(gridXZ);
     light = new THREE.PointLight(0xffffff);
     light.position.set(0, 0, 0);
     scene.add(light);
->>>>>>> gh-pages
+
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x888888);
     
     renderer.autoClear = false;
-<<<<<<< HEAD
 
-=======
->>>>>>> gh-pages
+
     control = new THREE.OrbitControls(camera, renderer.domElement);
     document.body.appendChild(renderer.domElement);
     window.addEventListener('resize', onWindowResize, false);
 }
-<<<<<<< HEAD
 
-=======
->>>>>>> gh-pages
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
-<<<<<<< HEAD
 
-=======
->>>>>>> gh-pages
 function animate() {
 	if(sign==1) BGM.volume=0;
 	else BGM.volume=0.4;
@@ -169,10 +150,7 @@ function animate() {
     requestAnimationFrame(animate);
     render();
 }
-<<<<<<< HEAD
 
-=======
->>>>>>> gh-pages
 function render() {
     	
 	count += 0.01 ;
@@ -205,11 +183,7 @@ function render() {
     renderer.render(sceneBack, cameraBack);
     renderer.render(scene, camera);
 }
-<<<<<<< HEAD
 
-
-=======
->>>>>>> gh-pages
 </script>
 </body>
 
