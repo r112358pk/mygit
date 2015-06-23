@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+
+	#container {
+	    width: 55%;
+	    float: left;
+	    margin-top: 0px;
+	}
+	#cnvsFrame {
+        height: 0;
+        padding-bottom: 70%;
+    }
+	#score{
+        position:absolute;
+        top: 170px;
+        width:55%;
+        text-align:left;
+        color: #ffffff;
+    }
+    #life{
+        position:absolute;
+        top: 200px;
+        width:55%;
+        text-align:left;
+        color: #ffffff;
+    }
+	
+
+
+	
+
+</style>
+</head>
+
+<body>
+<h1 style="text-align:center"> My first game </h1>
+<hr>
+
+<div id="container">
+<div id="cnvsFrame">
+    <canvas id="cnvs"> </canvas>
+</div>
+</div>
+<div style="float:left; margin-left: 10px; width:32vw;">
+User Name:
+    <input id="user" style="width:50%" type="text" value="Mickey">
+    <br/>
+    <br/>
+    <button id="login" style="width:50%">Login</button>
+    <p id='greeting'></p>
+</div>
+
+<div id="cnvsFrame">
+    <canvas id="cnvs"> </canvas>
+</div>
+
+
+<div id="score">SCORE:0</div>
+<div id="life">LIFE:5</div>
+
+<script src="js/three.min.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/KeyboardState.js"></script>
+<script src="js/jquery-1.11.1.js"></script>
+<script id="vertexShader" type="x-shader/x-vertex">
+    varying vec2 vUv;
+    
+    void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+</script>
+<script id="fragmentShader" type="x-shader/x-fragment">
+    uniform float time;
+    varying vec2 vUv;
+    
+    float rand(vec2 co) {
+        return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    }
+
+    void main(void) {
+        // Divide the coordinates into a grid of squares
+    vec2 v = vUv*10.0; //gl_FragCoord.xy / 20.0;
+        // Calculate a pseudo-random brightness value for each square
+        vec3 brightness = vec3(fract(rand(floor(v)) + time), fract(rand(floor(v)) + time / 3.), fract(rand(floor(v)) + time / 5.));
+        // Reduce brightness in pixels away from the square center
+        brightness *= 0.5 - length(fract(v) - vec2(0.5, 0.5));
+        gl_FragColor = vec4(brightness.r * 4.0, brightness.g * brightness.b * 2., brightness.b - brightness.r + 0.2, 1);
+    }
+</script>
+
+
+<script>
+var camera, scene, renderer, geometry, material, mesh, controls;
+var pos, vel, pColor, alive;
+var clock = new THREE.Clock();
+var pucks = [];
+var pointLight;
+var temp = 1;
+var life = 5, score;
+var mesh1,mesh12,mesh2,mesh22;
+var theCanvas, theCanvasFrame;
+var records = [];
+var mesh_g, mesh_g2;
+var mouse = new THREE.Vector2();
+var meshMaterial;
+var gameState = false;
+var text_Score, text_Life,  text_Info, text_Pucks;
+
+
+var Puck = function (){
+    this.pos = new THREE.Vector3();
+    this.vel = new THREE.Vector3();
+    this.pointLight = new THREE.PointLight();
+    this.pColor = new THREE.Color();
+    this.mesh = new THREE.Mesh(new THREE.CylinderGeometry(10,10,1,20), new THREE.MeshBasicMaterial());
+	this.alive = true;
+};
+Puck.prototype.update = function(dt){
+    this.pos.add(this.vel.clone().multiplyScalar(dt));
+    this.mesh.position.copy(this.pos);
+    this.pointLight.position.set(this.pos.x,10,this.pos.z);
+    this.pointLight.color = this.pColor; 
+    this.mesh.material.color = this.pColor;
+};
+Puck.prototype.collision = function (){
+    if (this.pos.x > 100) {
+        this.pos.x = 100;
+        this.vel.set(-this.vel.x, 0, this.vel.z);
+        this.pColor.setHSL(Math.random(), Math.random(), Math.random() / 2 + 0.5);
+    } else if (this.pos.x < -100) {
+        this.pos.x = -100;
+        this.vel.set(-this.vel.x, 0, this.vel.z);
+        this.pColor.setHSL(Math.random(), Math.random(), Math.random() / 2 + 0.5);
+    }
+	if ( (this.pos.z > 100 && this.pos.x > mesh1.position.x+55) && (this.pos.z > 100 && this.pos.x < mesh12.position.x-55) || 
+		(this.pos.z  < -100 && this.pos.x > mesh2.position.x+55) && (this.pos.z < -100 && this.pos.x < mesh22.position.x-55)) {
+		//delete this.id;
+		this.alive = false;
+		scene.remove(this.mesh);
+		scene.remove(this.pointLight);
+		life=life-1;
+	}
+	else if(this.pos.z > 100){
+	    this.pos.z = 100;
+        this.vel.set(this.vel.x, 0, -this.vel.z);
+        this.pColor.setHSL(Math.random(), Math.random(), Math.random() / 2 + 0.5);
+	}
+	else if(this.pos.z < -100){ 
+        this.pos.z = -100;
+        this.vel.set(this.vel.x, 0, -this.vel.z);
+        this.pColor.setHSL(Math.random(), Math.random(), Math.random() / 2 + 0.5);
+    }
+	// for others pucks collision
+	for(var i = 0; i < pucks.length; i++){
+		var a = this.pos.x - pucks[i].pos.x;
+		var b = this.pos.z - pucks[i].pos.z;
+		if(a*a+b*b <= 100 && a*a+b*b > 0)
+			this.vel.set(a*10,0,b*10);
+	}
+	if(this.pos.distanceTo ( mesh_g.position ) <= 12){
+        this.vel.x = this.pos.x - mesh_g.position.x;
+        this.vel.z = this.pos.z - mesh_g.position.z;
+        this.vel.multiplyScalar(10);
+    }
+	if(this.pos.distanceTo ( mesh_g2.position ) <= 12){
+        this.vel.x = this.pos.x - mesh_g2.position.x;
+        this.vel.z = this.pos.z - mesh_g2.position.z;
+        this.vel.multiplyScalar(10);
+    }
+
+};
+function newPuck() {
+    var puck = new Puck();
+    puck.pos = new THREE.Vector3(0, 1, 0);
+    puck.vel = new THREE.Vector3(Math.random(5,7)*100, 0, Math.random(5,7)*100);
+    //puck.mesh.material.color = puck.pColor;
+	puck.pColor.setHSL(Math.random(), Math.random(), Math.random());
+    puck.pointLight = new THREE.PointLight(puck.pColor.getHex(), 1);
+    scene.add(puck.mesh);
+    scene.add(puck.pointLight);
+    return puck;
+};
+
+init();
+animate();
+
+$("#login").click(function () {
+    var name = document.getElementById('user').value;
+    alert(name + " is playing");
+	
+    var result = searchUser(name);
+    if (result >= 0) {
+        document.getElementById('greeting').innerHTML = "Your high score: " + result;
+    } else {
+        document.getElementById('greeting').innerHTML = "Welcome!";
+    }
+	gameState = true;
+});
+
+function searchUser(name) {
+    for (var i = 0; i < records.length; i++) {
+        if (records[i].name === name) {
+            return records[i].score;
+        }
+    }
+    return -1;
+}
+
+
+function init() {
+
+    scene = new THREE.Scene();
+	
+	theCanvas = document.getElementById("cnvs");
+    theCanvasFrame = document.getElementById("cnvsFrame");
+	
+	records.push({
+        name: "Adam",
+        score: 50
+    });
+    records.push({
+        name: "Brian",
+        score: 53
+    });
+	var objStr = JSON.stringify(records);
+    localStorage.setItem("scores", objStr);
+
+
+    camera = new THREE.PerspectiveCamera(50, theCanvasFrame.clientWidth / theCanvasFrame.clientHeight, 1, 10000);
+    camera.position.z = 500;
+    scene.add(camera);
+
+    geometry = new THREE.BoxGeometry(220, 30, 10);
+	geometry2 = new THREE.BoxGeometry(110, 30, 10);
+    material = new THREE.MeshBasicMaterial({
+        transparent: true,
+        color: 0xff1111,
+        opacity: 0.4
+    });
+
+    mesh = new THREE.Mesh(geometry, material);
+    
+	mesh1 = new THREE.Mesh(geometry2, material);
+	mesh1.position.set(-55, 15, 105);
+    scene.add(mesh1);
+	mesh12 = mesh1.clone();
+	mesh12.position.set(55, 15, 105);
+	scene.add(mesh12);
+	
+    mesh2 = mesh1.clone();
+    mesh2.position.set(-55, 15, -105);
+    scene.add(mesh2);
+	mesh22 = mesh1.clone();
+	mesh22.position.set(55, 15, -105);
+	scene.add(mesh22);
+    mesh3 = mesh.clone();
+    mesh3.rotation.y = Math.PI / 2;
+    mesh3.position.set(105, 15, 0);
+    scene.add(mesh3);
+    mesh4 = mesh.clone();
+    mesh4.rotation.y = Math.PI / 2;
+    mesh4.position.set(-105, 15, 0);
+    scene.add(mesh4);
+   
+    pucks.push(newPuck()); //first puck
+	     
+    meshMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            time: {
+                type: 'f',
+                value: 1.0
+            }
+        },
+        vertexShader: document.getElementById('vertexShader').textContent,
+        fragmentShader: document.getElementById('fragmentShader').textContent
+    });
+    var ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 130, 130),
+    meshMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    scene.add(ground);
+	
+	geometry_game = new THREE.CylinderGeometry(10, 10, 2, 20);
+    mesh_g =new THREE.Mesh(geometry_game,new THREE.MeshBasicMaterial({color:0x00ffff}));
+    mesh_g.position.set(0,6,105);
+    scene.add(mesh_g);
+	mesh_g2= mesh_g.clone();
+	scene.add(mesh_g2);
+
+    renderer = new THREE.WebGLRenderer({
+		canvas: theCanvas,
+		antialias: true
+	});
+    renderer.setSize(theCanvasFrame.clientWidth, theCanvasFrame.clientHeight);
+    renderer.setClearColor(0x888888);
+	renderer.autoClear = false;
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    //document.body.appendChild(renderer.domElement);
+	window.addEventListener('resize', onWindowResize, false);
+	text_Score = window.document.getElementById ('score');
+    text_Life = window.document.getElementById ('life');		
+	window.addEventListener('mousemove', onDocumentMouseMove, false);
+
+}
+function onWindowResize() {
+    camera.aspect = theCanvasFrame.clientWidth / theCanvasFrame.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(theCanvasFrame.clientWidth, theCanvasFrame.clientHeight);
+}
+function onDocumentMouseMove(event) {
+
+
+    event.preventDefault();
+    mouse.x = (event.clientX / theCanvasFrame.clientWidth) * 2 - 1 - 0.013;
+    mouse.y = -(event.clientY / theCanvasFrame.clientHeight) * 2 + 1 + 0.28;
+    
+     mesh_g.position.x = mouse.x * 200;
+    if (mesh_g.position.x < -100)
+        mesh_g.position.x = -100;
+    if (mesh_g.position.x > 100)
+        mesh_g.position.x = 100;
+}
+
+function animate() {
+	if(gameState){
+    var dt = clock.getDelta();
+    var t = clock.getElapsedTime ();
+	score = t.toFixed(2);
+	//add others puck
+     if(t/10 > temp && temp < 10){
+		pucks.push(newPuck());
+        temp++;
+    }
+	if(t<=55){
+		mesh1.position.set(-55-t*1.5, 15, 105);
+		mesh12.position.set(55+t*1.5, 15, 105);
+		mesh2.position.set(-55-t*1.5, 15, -105);
+		mesh22.position.set(55+t*1.5, 15, -105);
+	}
+
+    for(var i = 0; i < pucks.length; i++){
+	if(pucks[i].alive){
+    pucks[i].update(dt);
+    pucks[i].collision();
+	}
+    }
+	text_Life.innerHTML = "LIFE:"+ life;
+    text_Score.innerHTML = "SCORE:"+ score;
+    
+   }
+   if(life === 0)
+   gameState = false;
+   
+   mesh_g2.position.set(mesh_g.position.x,0,-100);
+    controls.update();
+    requestAnimationFrame(animate);
+    render();
+}
+
+
+function render() {
+	var delta = clock.getDelta();
+
+    meshMaterial.uniforms.time.value += delta * 4;
+	renderer.clear();
+    renderer.render(scene, camera);
+	
+}
+
+</script>
+</body>
+
+</html>
